@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF × Excel 照合システム｜能美防災 メヌマ工場</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+  :root {
+    --navy: #0f1e3d;
+    --navy-mid: #1a3260;
+    --navy-light: #2a4a8a;
+    --accent: #00c2ff;
+    --accent-warm: #ff8c42;
+    --success: #00d48a;
+    --warning: #ffcc00;
+    --danger: #ff4757;
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --border: #dde3ec;
+    --text: #1a2540;
+    --muted: #7a8aaa;
+    --shadow: 0 4px 24px rgba(15, 30, 61, 0.10);
+    --shadow-lg: 0 12px 48px rgba(15, 30, 61, 0.16);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* ─── Header ─── */
+  header {
+    background: var(--navy);
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .header-logo {
+    width: 32px; height: 32px;
+    background: var(--accent);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .header-title {
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+  }
+  .header-sub {
+    color: rgba(255,255,255,0.45);
+    font-size: 11px;
+    margin-top: 2px;
+    font-weight: 300;
+  }
+  .header-badge {
+    background: rgba(0, 194, 255, 0.15);
+    border: 1px solid rgba(0, 194, 255, 0.4);
+    color: var(--accent);
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ─── Main layout ─── */
+  main {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* ─── Upload Area ─── */
+  .upload-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  @media (max-width: 700px) {
+    .upload-section { grid-template-columns: 1fr; }
+  }
+
+  .dropzone {
+    background: var(--surface);
+    border: 2px dashed var(--border);
+    border-radius: 16px;
+    padding: 36px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    box-shadow: var(--shadow);
+  }
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0, 194, 255, 0.04);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+  .dropzone.file-loaded {
+    border-color: var(--success);
+    background: rgba(0, 212, 138, 0.04);
+  }
+  .dropzone-icon {
+    font-size: 40px;
+    margin-bottom: 12px;
+    line-height: 1;
+  }
+  .dropzone-label {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .dropzone-hint {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .dropzone-filename {
+    margin-top: 12px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--success);
+    background: rgba(0, 212, 138, 0.08);
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  input[type="file"] { display: none; }
+
+  /* ─── Run Button ─── */
+  .run-area {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .btn-run {
+    background: linear-gradient(135deg, var(--navy-light), var(--accent));
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px 40px;
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0, 194, 255, 0.35);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-run:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 194, 255, 0.45);
+  }
+  .btn-run:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+  .btn-download {
+    background: var(--surface);
+    color: var(--success);
+    border: 2px solid var(--success);
+    border-radius: 12px;
+    padding: 13px 24px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: 'Noto Sans JP', sans-serif;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-download:hover {
+    background: rgba(0, 212, 138, 0.08);
+    transform: translateY(-1px);
+  }
+  .btn-download.visible { display: flex; }
+
+  /* ─── Progress / Status ─── */
+  .status-bar {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: none;
+    align-items: center;
+    gap: 16px;
+    box-shadow: var(--shadow);
+    border-left: 4px solid var(--accent);
+  }
+  .status-bar.visible { display: flex; }
+  .status-bar.error { border-color: var(--danger); }
+  .status-bar.success { border-color: var(--success); }
+  .spinner {
+    width: 20px; height: 20px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-text { font-size: 14px; font-weight: 500; }
+
+  /* ─── Summary Cards ─── */
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+    margin-bottom: 28px;
+    display: none;
+  }
+  .summary-grid.visible { display: grid; }
+  @media (max-width: 900px) {
+    .summary-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .summary-card {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 20px 16px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    transition: transform 0.2s;
+  }
+  .summary-card:hover { transform: translateY(-2px); }
+  .summary-card .value {
+    font-size: 32px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 4px;
+  }
+  .summary-card .label {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .c-total .value { color: var(--navy-light); }
+  .c-ok .value { color: var(--success); }
+  .c-diff .value { color: var(--danger); }
+  .c-rate .value { color: var(--accent); }
+  .c-unmatch .value { color: var(--accent-warm); }
+
+  /* ─── Filter Bar ─── */
+  .filter-bar {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .filter-bar.visible { display: flex; }
+  .filter-btn {
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'Noto Sans JP', sans-serif;
+  }
+  .filter-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+  .filter-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+  .search-input {
+    padding: 7px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: 20px;
+    font-size: 12px;
+    outline: none;
+    font-family: 'Noto Sans JP', sans-serif;
+    width: 220px;
+    transition: border-color 0.15s;
+  }
+  .search-input:focus { border-color: var(--accent); }
+
+  /* ─── Result Table ─── */
+  .table-wrapper {
+    background: var(--surface);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    display: none;
+  }
+  .table-wrapper.visible { display: block; }
+  .table-scroll { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  thead th {
+    background: var(--navy);
+    color: #fff;
+    padding: 12px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 11px;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    position: sticky;
+    top: 0;
+  }
+  thead th:first-child { padding-left: 16px; }
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  tbody tr:hover { background: rgba(0, 194, 255, 0.04); }
+  tbody tr.row-diff { background: rgba(255, 71, 87, 0.04); }
+  tbody tr.row-diff:hover { background: rgba(255, 71, 87, 0.08); }
+  tbody tr.row-unmatch { background: rgba(255, 140, 66, 0.04); }
+  tbody td {
+    padding: 10px 10px;
+    vertical-align: middle;
+  }
+  tbody td:first-child { padding-left: 16px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .badge-ok { background: rgba(0,212,138,0.12); color: var(--success); }
+  .badge-diff { background: rgba(255,71,87,0.12); color: var(--danger); }
+  .badge-unmatch { background: rgba(255,140,66,0.12); color: var(--accent-warm); }
+  .badge-info { background: rgba(0,194,255,0.12); color: var(--accent); }
+
+  .cell-match { color: var(--success); font-weight: 700; }
+  .cell-nomatch { color: var(--danger); font-weight: 700; background: rgba(255,71,87,0.08); border-radius: 4px; padding: 2px 5px; }
+  .cell-hand { color: var(--accent-warm); font-size: 13px; }
+  .cell-mono { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; }
+  .cell-desc { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .no-results {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  /* ─── Footer ─── */
+  footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="header-logo">📋</div>
+    <div>
+      <div class="header-title">PDF × Excel 照合システム</div>
+      <div class="header-sub">能美防災（株）メヌマ工場 チップ部品出庫・戻入伝票 自動照合</div>
+    </div>
+  </div>
+  <span class="header-badge" id="serverStatus">サーバー確認中...</span>
+</header>
+
+<main>
+
+  <!-- Upload -->
+  <div class="upload-section">
+    <div class="dropzone" id="dropPdf" onclick="document.getElementById('filePdf').click()">
+      <div class="dropzone-icon">📄</div>
+      <div class="dropzone-label">伝票 PDF</div>
+      <div class="dropzone-hint">クリックまたはドラッグ＆ドロップ</div>
+      <div class="dropzone-filename" id="pdfName" style="display:none"></div>
+    </div>
+    <div class="dropzone" id="dropExcel" onclick="document.getElementById('fileExcel').click()">
+      <div class="dropzone-icon">📊</div>
+      <div class="dropzone-label">実績データ Excel</div>
+      <div class="dropzone-hint">クリックまたはドラッグ＆ドロップ</div>
+      <div class="dropzone-filename" id="excelName" style="display:none"></div>
+    </div>
+    <input type="file" id="filePdf" accept=".pdf">
+    <input type="file" id="fileExcel" accept=".xlsx,.xls">
+  </div>
+
+  <!-- Actions -->
+  <div class="run-area">
+    <button class="btn-run" id="btnRun" disabled onclick="runVerify()">
+      <span>🔍</span> 照合を実行する
+    </button>
+    <button class="btn-download" id="btnDownload" onclick="downloadResult()">
+      <span>⬇</span> Excelダウンロード
+    </button>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar" id="statusBar">
+    <div class="spinner" id="spinner"></div>
+    <div class="status-text" id="statusText">処理中...</div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-grid" id="summaryGrid">
+    <div class="summary-card c-total"><div class="value" id="s-total">0</div><div class="label">総照合件数</div></div>
+    <div class="summary-card c-ok"><div class="value" id="s-ok">0</div><div class="label">✓ 一致</div></div>
+    <div class="summary-card c-diff"><div class="value" id="s-diff">0</div><div class="label">⚠ 差異あり</div></div>
+    <div class="summary-card c-unmatch"><div class="value" id="s-unmatch">0</div><div class="label">未マッチ</div></div>
+    <div class="summary-card c-rate"><div class="value" id="s-rate">0%</div><div class="label">一致率</div></div>
+  </div>
+
+  <!-- Filter -->
+  <div class="filter-bar" id="filterBar">
+    <button class="filter-btn active" onclick="setFilter('all', this)">すべて</button>
+    <button class="filter-btn" onclick="setFilter('diff', this)">⚠ 差異あり</button>
+    <button class="filter-btn" onclick="setFilter('ok', this)">✓ 一致</button>
+    <button class="filter-btn" onclick="setFilter('unmatch', this)">未マッチ</button>
+    <input type="text" class="search-input" id="searchInput" placeholder="🔎 伝票番号・ロット・品目で検索" oninput="renderTable()">
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper" id="tableWrapper">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>状態</th>
+            <th>伝票番号</th>
+            <th>伝票種別</th>
+            <th>P</th>
+            <th>SEQ</th>
+            <th>保管場所</th>
+            <th>PDF_ロット</th>
+            <th>Excel_ロット</th>
+            <th>L</th>
+            <th>PDF_品目説明</th>
+            <th>Excel_品目説明</th>
+            <th>D</th>
+            <th>PDF_実績数</th>
+            <th>Excel_実績数</th>
+            <th>Q</th>
+            <th>✎</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+<footer>PDF × Excel 照合システム｜Claude Opus 4.5 × Flask｜能美防災（株）メヌマ工場</footer>
+
+<script>
+  let allResults = [];
+  let currentFilter = 'all';
+  let pdfFile = null;
+  let excelFile = null;
+
+  // ─── Server health check ─────────────────────────────
+  async function checkServer() {
+    try {
+      const r = await fetch('/api/health');
+      if (r.ok) {
+        document.getElementById('serverStatus').textContent = '● サーバー稼働中';
+        document.getElementById('serverStatus').style.color = '#00d48a';
+      }
+    } catch {
+      document.getElementById('serverStatus').textContent = '● オフライン（デモモード）';
+      document.getElementById('serverStatus').style.color = '#ff8c42';
+    }
+  }
+  checkServer();
+
+  // ─── File handling ────────────────────────────────────
+  function setupDrop(zoneId, inputId, isExcel) {
+    const zone = document.getElementById(zoneId);
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const f = e.dataTransfer.files[0];
+      if (f) handleFile(f, isExcel);
+    });
+    document.getElementById(inputId).addEventListener('change', e => {
+      if (e.target.files[0]) handleFile(e.target.files[0], isExcel);
+    });
+  }
+
+  function handleFile(file, isExcel) {
+    if (isExcel) {
+      excelFile = file;
+      document.getElementById('excelName').textContent = '📎 ' + file.name;
+      document.getElementById('excelName').style.display = 'inline-block';
+      document.getElementById('dropExcel').classList.add('file-loaded');
+    } else {
+      pdfFile = file;
+      document.getElementById('pdfName').textContent = '📎 ' + file.name;
+      document.getElementById('pdfName').style.display = 'inline-block';
+      document.getElementById('dropPdf').classList.add('file-loaded');
+    }
+    document.getElementById('btnRun').disabled = !(pdfFile && excelFile);
+  }
+
+  setupDrop('dropPdf', 'filePdf', false);
+  setupDrop('dropExcel', 'fileExcel', true);
+
+  // ─── Verify ───────────────────────────────────────────
+  async function runVerify() {
+    const bar = document.getElementById('statusBar');
+    const text = document.getElementById('statusText');
+    const spinner = document.getElementById('spinner');
+
+    bar.className = 'status-bar visible';
+    spinner.style.display = 'block';
+    text.textContent = 'Claude Opus 4.5 がPDF全ページを精読中...（数分かかる場合があります）';
+    document.getElementById('btnRun').disabled = true;
+    document.getElementById('btnDownload').classList.remove('visible');
+    document.getElementById('summaryGrid').classList.remove('visible');
+    document.getElementById('tableWrapper').classList.remove('visible');
+    document.getElementById('filterBar').classList.remove('visible');
+
+    const fd = new FormData();
+    fd.append('pdf', pdfFile);
+    fd.append('excel', excelFile);
+
+    try {
+      const res = await fetch('/api/verify', { method: 'POST', body: fd });
+      const data = await res.json();
+
+      if (!res.ok) {
+        bar.className = 'status-bar visible error';
+        spinner.style.display = 'none';
+        text.textContent = '❌ エラー: ' + (data.error || '不明なエラー');
+        return;
+      }
+
+      allResults = data.results;
+      const s = data.summary;
+
+      document.getElementById('s-total').textContent = s.total;
+      document.getElementById('s-ok').textContent = s.matched;
+      document.getElementById('s-diff').textContent = s.diff;
+      document.getElementById('s-unmatch').textContent = s.excel_unmatch + s.pdf_unmatch;
+      document.getElementById('s-rate').textContent = s.match_rate + '%';
+
+      bar.className = 'status-bar visible success';
+      spinner.style.display = 'none';
+      text.textContent = `✅ 照合完了 — ${s.total}件 / 一致率 ${s.match_rate}% / 差異 ${s.diff}件`;
+
+      document.getElementById('summaryGrid').classList.add('visible');
+      document.getElementById('filterBar').classList.add('visible');
+      document.getElementById('tableWrapper').classList.add('visible');
+      document.getElementById('btnDownload').classList.add('visible');
+      currentFilter = 'all';
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.filter-btn')[0].classList.add('active');
+      renderTable();
+
+    } catch (e) {
+      bar.className = 'status-bar visible error';
+      spinner.style.display = 'none';
+      text.textContent = '❌ 通信エラー: サーバーに接続できません';
+    } finally {
+      document.getElementById('btnRun').disabled = false;
+    }
+  }
+
+  // ─── Filter & Render ──────────────────────────────────
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTable();
+  }
+
+  function renderTable() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    let rows = allResults;
+
+    if (currentFilter === 'diff') rows = rows.filter(r => r.status === 'diff');
+    else if (currentFilter === 'ok') rows = rows.filter(r => r.status === 'ok');
+    else if (currentFilter === 'unmatch') rows = rows.filter(r => r.status === 'excel_unmatch' || r.status === 'pdf_unmatch');
+
+    if (search) {
+      rows = rows.filter(r =>
+        (r.slip||'').toLowerCase().includes(search) ||
+        (r.pdf_lot||'').toLowerCase().includes(search) ||
+        (r.excel_lot||'').toLowerCase().includes(search) ||
+        (r.pdf_desc||'').toLowerCase().includes(search) ||
+        (r.excel_desc||'').toLowerCase().includes(search) ||
+        (r.location||'').toLowerCase().includes(search)
+      );
+    }
+
+    const tbody = document.getElementById('resultBody');
+    if (rows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="16" class="no-results">該当するデータがありません</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = rows.map(r => {
+      const trClass = r.status === 'diff' ? 'row-diff' :
+                      (r.status === 'excel_unmatch' || r.status === 'pdf_unmatch') ? 'row-unmatch' : '';
+      const statusBadge = r.status === 'ok' ?
+        `<span class="badge badge-ok">✓ 一致</span>` :
+        r.status === 'diff' ?
+        `<span class="badge badge-diff">⚠ 差異あり</span>` :
+        r.status === 'excel_unmatch' ?
+        `<span class="badge badge-unmatch">Excel未マッチ</span>` :
+        `<span class="badge badge-info">PDF未マッチ</span>`;
+
+      const c = (v, ok) => ok ?
+        `<span class="cell-match">✓</span>` :
+        `<span class="cell-nomatch">✗</span>`;
+
+      return `<tr class="${trClass}">
+        <td>${statusBadge}</td>
+        <td class="cell-mono">${esc(r.slip)}</td>
+        <td>${esc(r.slip_type||'')}</td>
+        <td style="text-align:center">${r.page||''}</td>
+        <td style="text-align:center">${r.seq||''}</td>
+        <td class="cell-mono" style="font-weight:600">${esc(r.location)}</td>
+        <td class="cell-mono">${esc(r.pdf_lot)}</td>
+        <td class="cell-mono">${esc(r.excel_lot)}</td>
+        <td style="text-align:center">${c(r.match_lot, r.match_lot)}</td>
+        <td class="cell-desc" title="${esc(r.pdf_desc)}">${esc(r.pdf_desc)}</td>
+        <td class="cell-desc" title="${esc(r.excel_desc)}">${esc(r.excel_desc)}</td>
+        <td style="text-align:center">${c(r.match_desc, r.match_desc)}</td>
+        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${r.pdf_qty??''}</td>
+        <td style="text-align:right;font-family:'JetBrains Mono',monospace">${r.excel_qty??''}</td>
+        <td style="text-align:center">${c(r.match_qty, r.match_qty)}</td>
+        <td style="text-align:center" class="cell-hand">${r.handwriting||''}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function esc(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  async function downloadResult() {
+    window.location.href = '/api/download';
+  }
+</script>
+</body>
+</html>
